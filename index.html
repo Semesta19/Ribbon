@@ -371,7 +371,6 @@ cv.addEventListener('dblclick',e=>{if(mode==='draw'||mode==='pan'||!S)return;con
 let dl=null;try{window.claude&&claude.use('downloads').then(d=>dl=d).catch(()=>{})}catch(_){}
 $('exp').onclick=async()=>{
   if(!layers.some(l=>l.s)){msg('Belum ada motif untuk diexport.');return}
-  if(!dl){msg('Export tidak tersedia di tampilan ini. Buka artifact di claude.ai.');return}
   const hh=H.slice(),pr=R.getPixelRatio(),bv=base.visible,bg=scene.background;let blob=null;
   hh.forEach(h=>scene.remove(h));base.visible=false;const rv=ref?ref.mesh.visible:false;if(ref)ref.mesh.visible=false;scene.background=null;R.setClearColor(0x000000,0);
   try{R.setPixelRatio(Math.min(3,Math.max(2,devicePixelRatio||1)));R.setSize(stage.clientWidth,stage.clientHeight);flush();R.render(scene,cam);
@@ -383,7 +382,9 @@ $('exp').onclick=async()=>{
       blob=await new Promise(r=>c3.toBlob(r,'image/png'))}
   }finally{R.setPixelRatio(pr);R.setSize(stage.clientWidth,stage.clientHeight);base.visible=bv;if(ref)ref.mesh.visible=rv;scene.background=bg;hh.forEach(h=>scene.add(h))}
   if(!blob){msg('Motif tidak terlihat di layar. Geser/zoom lalu coba lagi.');return}
-  try{await dl.save({filename:'motif-kain.png',data:blob});msg('PNG transparan siap disimpan.')}catch(err){msg(err&&err.code==='declined'?'Penyimpanan dibatalkan.':'Gagal menyimpan PNG.')}};
+  if(dl){try{await dl.save({filename:'motif-kain.png',data:blob});msg('PNG transparan siap disimpan.')}catch(err){msg(err&&err.code==='declined'?'Penyimpanan dibatalkan.':'Gagal menyimpan PNG.')}return}
+  /* di luar claude.ai (mis. Vercel): unduhan browser biasa */
+  try{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='motif-kain.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);msg('PNG transparan diunduh.')}catch(err){msg('Gagal mengunduh PNG.')}};
 
 (function loop(){requestAnimationFrame(loop);flush();R.render(scene,cam)})();
 resize();new ResizeObserver(resize).observe(stage);renderLayers();demo();setMode('draw');
