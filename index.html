@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Studio Motif Aplikasi Kain</title>
+<style>
+/* Identitas: kain indigo (celup nila) di atas warna kain mentah. Aksen indigo hanya untuk mode/tombol aktif dan Ekspor. */
+:root{--bg:#e8e7e2;--panel:#f6f5f1;--text:#1c2331;--mut:#566074;--line:#cfcdc4;--acc:#2a479b;--accT:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151c;--panel:#1a1e27;--text:#e6e8ee;--mut:#9aa3b5;--line:#2f3544;--acc:#8ea6ee;--accT:#10152a}}
+:root[data-theme="dark"]{--bg:#12151c;--panel:#1a1e27;--text:#e6e8ee;--mut:#9aa3b5;--line:#2f3544;--acc:#8ea6ee;--accT:#10152a}
+*{box-sizing:border-box}html,body{height:100%;margin:0;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;display:flex;flex-direction:column;height:100dvh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+header{flex:0 0 auto;padding:8px 12px;border-bottom:1px solid var(--line);display:flex;gap:12px;align-items:center;background:var(--panel)}
+h1{font:600 17px "Iowan Old Style","Palatino Linotype",Georgia,serif;margin:0}header span{color:var(--mut);font-size:12px}#tg{margin-left:auto}
+main{flex:1 1 0;min-height:0;display:flex}
+#stage{flex:1 1 0;min-width:0;min-height:0;position:relative;touch-action:none;background:#dcd0b8}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+aside{flex:0 0 316px;background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;overscroll-behavior:contain}
+aside.hide{display:none}
+aside section{padding:12px;border-top:1px solid var(--line)}aside section:first-child{border-top:0}
+@media(max-width:760px){main{flex-direction:column}aside{flex:0 0 auto;width:100%;max-height:42dvh;border-left:0;border-top:1px solid var(--line)}header span{display:none}}
+h2{font:600 13px system-ui;color:var(--text);margin:0 0 8px}
+.row{display:flex;gap:6px;flex-wrap:wrap}
+button{font:inherit;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:6px 10px;min-height:34px;cursor:pointer;touch-action:manipulation}
+button:hover{border-color:var(--text)}button.on{background:var(--acc);color:var(--accT);border-color:var(--acc);font-weight:600}
+button.pri{background:var(--acc);color:var(--accT);border-color:var(--acc);font-weight:600}
+.seg{display:flex}.seg button{flex:1;border-radius:0;margin-left:-1px}.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}.seg button:last-child{border-radius:0 6px 6px 0}
+.seg.w{gap:6px;flex-wrap:wrap}.seg.w button{border-radius:6px;margin:0;flex:1 1 28%}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media(pointer:coarse){button{min-height:44px}}
+label{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:6px 0;color:var(--mut);font-size:13px}
+label input[type=range]{flex:0 0 52%;accent-color:var(--acc)}input[type=color]{border:1px solid var(--line);border-radius:6px;padding:0;width:44px;height:28px;background:none}
+.hint{font-size:12.5px;color:var(--mut);margin:8px 0 4px}#msg{min-height:18px;font-size:12.5px;color:var(--text);margin-top:8px}
+.zoom{position:absolute;right:10px;bottom:10px;display:flex;gap:6px}.zoom button{background:var(--panel);width:40px;height:40px;padding:0;font-size:18px}
+</style></head><body>
+<header><h1>Studio Motif Aplikasi Kain</h1><span>Pita kain dijahit di tengah, tepinya bebas berkerut</span><button id="tg" aria-expanded="true" aria-controls="panel">Sembunyikan panel</button></header>
+<main>
+<div id="stage"><div class="zoom"><button id="zi" aria-label="Perbesar">+</button><button id="zo" aria-label="Perkecil">&minus;</button></div></div>
+<aside id="panel" aria-label="Pengaturan">
+<section><h2>Gaya render</h2><div class="seg"><button id="st-real" class="on" aria-pressed="true">Realistik</button><button id="st-comic" aria-pressed="false">Komikal</button></div></section>
+<section><h2>Mode kerja</h2>
+<div class="seg w"><button id="m-draw" class="on" aria-pressed="true">Perpanjang</button><button id="m-select" aria-pressed="false">Bentuk</button><button id="m-fold" aria-pressed="false">Lipat</button><button id="m-ref" aria-pressed="false">Foto</button><button id="m-pan" aria-pressed="false">Geser</button></div>
+<p class="hint" id="hint"></p>
+<label>Pertahankan sudut tajam <input id="sharp" type="checkbox" checked></label>
+<label>Sudut dianggap tajam mulai <input id="sth" type="range" min="25" max="100" step="1" value="50"></label>
+<label>Lipatan membalik sisi kain <input id="flip" type="checkbox" checked></label></section>
+<section><h2>Titik terpilih</h2>
+<label>Lipatan tajam <input id="pc" type="checkbox" disabled></label>
+<label>Puntir (sudut garis lipat) <input id="pt" type="range" min="0" max="175" step="5" value="0" disabled></label>
+<p class="hint">Ketuk titik di mode Bentuk atau Lipat untuk memilihnya. Puntir di atas 0 membalik sisi kain melewati garis lipat lurus di titik itu; angkanya sudut garis terhadap pita (90&deg; = melintang, 45&deg; = miring). Pakai dua titik untuk membuat bagian pita yang terbalik di antaranya.</p></section>
+<section><h2>Foto referensi</h2>
+<div class="row"><button id="ru">Unggah foto</button><button id="rx">Hapus foto</button></div>
+<label>Ukuran <input id="rsz" type="range" min="0.5" max="12" step="0.05" value="5"></label>
+<label>Putar <input id="rrt" type="range" min="-180" max="180" step="1" value="0"></label>
+<label>Transparansi <input id="rop" type="range" min="0.1" max="1" step="0.01" value="0.55"></label>
+<label>Tampilkan <input id="rvis" type="checkbox" checked></label>
+<input id="rf" type="file" accept="image/*" hidden>
+<p class="hint">Foto ada di bawah semua layer pita. Pindahkan dan ubah ukurannya di mode Foto.</p></section>
+<section><h2>Layer (satu layer = satu pita)</h2>
+<div id="layers" class="row"></div>
+<div class="row" style="margin-top:6px"><button id="la">Tambah layer</button><button id="lu">Naik</button><button id="ld">Turun</button><button id="lx">Hapus layer</button></div></section>
+<section><h2>Pita di layer ini</h2>
+<label>Lebar <input id="sw" type="range" min="0.15" max="0.8" step="0.01" value="0.34"></label>
+<label>Kerutan tepi <input id="sr" type="range" min="0" max="1" step="0.01" value="0.7"></label>
+<label>Arah motif <input id="sa" type="range" min="0" max="90" step="1" value="0"></label>
+<label>Warna kain <input id="sc" type="color" value="#ffffff"></label>
+<label>Ukuran motif <input id="ms" type="range" min="0.3" max="4" step="0.05" value="1"></label>
+<label>Pudar sisi belakang <input id="bkf" type="range" min="0" max="1" step="0.01" value="0.25"></label>
+<div class="row"><button id="mu">Unggah motif</button><button id="mx">Tanpa motif</button></div><input id="mf" type="file" accept="image/*" hidden>
+<div id="compal" style="display:none"><label>Warna komikal <input id="cf" type="color" value="#c9c9c9"></label></div>
+<div class="row" style="margin-top:6px"><button id="cut">Pendekkan ujung</button><button id="rl">Putar -15&deg;</button><button id="rr">Putar +15&deg;</button><button id="bg">Besarkan</button><button id="sm">Kecilkan</button><button id="fl">Balik</button><button id="sm0">Haluskan sudut</button><button id="sh0">Tajamkan sudut</button></div></section>
+<section><h2>Tampilan</h2>
+<label>Ketebalan kain <input id="lift" type="range" min="0.008" max="0.06" step="0.002" value="0.02"></label>
+<label>Arah cahaya <input id="lt" type="range" min="0" max="360" step="1" value="135"></label>
+<label>Latar pinstripe <input id="bgon" type="checkbox" checked></label></section>
+<section><h2>Proyek</h2>
+<div class="row"><button id="demo">Contoh bunga</button><button id="demoz">Contoh sudut tajam</button><button id="clr">Hapus semua</button></div>
+<div class="row" style="margin-top:6px"><button id="exp" class="pri">Ekspor PNG transparan</button></div>
+<div id="msg" role="status" aria-live="polite"></div></section>
+</aside></main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),V2=(x,y)=>new THREE.Vector2(x,y);
+const stage=$('stage');
+const R=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+R.setPixelRatio(Math.min(devicePixelRatio||1,2));R.outputEncoding=THREE.sRGBEncoding;
+R.shadowMap.enabled=true;R.shadowMap.type=THREE.PCFSoftShadowMap;
+stage.appendChild(R.domElement);const cv=R.domElement;
+const scene=new THREE.Scene(),BG=new THREE.Color(0xdcd0b8),BGC=new THREE.Color(0xf3f1ec);scene.background=BG;
+const VH=6,cam=new THREE.OrthographicCamera(-1,1,1,-1,0.1,100);cam.position.set(0,0,60);
+function resize(){const w=stage.clientWidth,h=stage.clientHeight;if(!w||!h)return;R.setSize(w,h);const a=w/h;cam.left=-VH*a/2;cam.right=VH*a/2;cam.top=VH/2;cam.bottom=-VH/2;cam.updateProjectionMatrix();scaleHandles()}
+addEventListener('resize',resize);
+$('tg').onclick=()=>{const h=$('panel').classList.toggle('hide');$('tg').textContent=h?'Tampilkan panel':'Sembunyikan panel';$('tg').setAttribute('aria-expanded',!h)};
+scene.add(new THREE.HemisphereLight(0xffffff,0xd8cdb8,0.42));
+const sun=new THREE.DirectionalLight(0xfff4e0,0.7);sun.castShadow=true;{const m=R.capabilities.maxTextureSize>=4096?4096:2048;sun.shadow.mapSize.set(m,m)}
+const sc=sun.shadow.camera;sc.left=sc.bottom=-16;sc.right=sc.top=16;sc.near=4;sc.far=80;sun.shadow.bias=-0.0003;sun.shadow.normalBias=0.006;
+scene.add(sun,sun.target);
+let LD=135;const LC=V2(0,0);function placeLight(){const r=LD*Math.PI/180;sun.position.set(LC.x+Math.cos(r)*24,LC.y+Math.sin(r)*24,20);sun.target.position.set(LC.x,LC.y,0);sun.target.updateMatrixWorld()}
+function setLight(d){LD=d;placeLight()}setLight(135);
+function tex(bg,line,lw,gray){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');g.fillStyle=gray?'#808080':bg;g.fillRect(0,0,128,128);
+/* serat halus acak; garis pinstripe hanya jika line diisi (latar) */
+for(let i=0;i<(gray?3000:1800);i++){const v=Math.random()<.5;g.fillStyle=gray?'rgba('+(v?'0,0,0':'255,255,255')+','+Math.random()*.18+')':'rgba('+(v?'110,90,60':'255,255,250')+','+Math.random()*.06+')';g.fillRect(Math.random()*128,Math.random()*128,1+(Math.random()<.3),1)}
+if(line){g.fillStyle=line;g.fillRect(60,0,lw*2,128)}
+const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=gray?THREE.LinearEncoding:THREE.sRGBEncoding;t.anisotropy=8;return t}
+function solid(){const c=document.createElement('canvas');c.width=c.height=4;const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,4,4);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.wrapS=t.wrapT=THREE.RepeatWrapping;return t}
+const SP=0.2,baseTex=tex('#e6d9bf','#7a6850',3),stripTex=solid();
+baseTex.repeat.set(300,300);
+const base=new THREE.Mesh(new THREE.PlaneGeometry(60,60),new THREE.MeshStandardMaterial({map:baseTex,roughness:1}));
+base.receiveShadow=true;scene.add(base);
+$('bgon').onchange=e=>{base.material.map=e.target.checked?baseTex:null;base.material.color.set(e.target.checked?0xffffff:0xe6d9bf);base.material.needsUpdate=true};
+
+let layers=[{s:null}],ai=0,S=null,comic=false,mode='draw',LR=0.02,H=[],drag=null,nid=3;
+const def={width:0.34,ruffle:0.7,angle:0,tint:'#ffffff',front:'#c9c9c9',msc:1,back:0.25,motifTex:null},GAP=0.12;
+const hsh=(i,k)=>{const x=Math.sin(i*127.1+k*311.7)*43758.5453;return (x-Math.floor(x))*2-1};
+
+function cmat(){return new THREE.ShaderMaterial({side:THREE.DoubleSide,extensions:{derivatives:true},
+uniforms:{uFront:{value:new THREE.Color()},uLen:{value:1},uHw:{value:.17}},
+vertexShader:'attribute float aT;attribute float aL;attribute float aR;varying float vT,vL,vR;void main(){vT=aT;vL=aL;vR=aR;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+fragmentShader:'uniform vec3 uFront;uniform float uLen,uHw;varying float vT,vL,vR;void main(){float wt=fwidth(vT),wl=fwidth(vL);float e=smoothstep(1.-wt*3.,1.-wt*2.,abs(vT));float c=max(1.-smoothstep(wl*2.,wl*3.,vL),smoothstep(uLen-wl*3.,uLen-wl*2.,vL));vec3 col=uFront*(vR>.5?.78:1.);float st=step(fract(vL/.1),.55)*(1.-smoothstep(.008,.013,abs(vT)*uHw));col=mix(col,vec3(.08),max(st,max(e,c)));gl_FragColor=vec4(col,1.);}'})}
+
+/* Pita dijahit di tengah garis lebarnya: garis jahitan menempel di apa pun yang ada di bawahnya (latar atau pita lain),
+   kedua sisi bebas terangkat landai + berriak. Tinggi tiap titik dihitung dari peta tinggi kain yang sudah terpasang di bawahnya,
+   sehingga bayangan rapat di jahitan dan melebar ke tepi. */
+let dirty=false;
+const CS=0.04,GR=15,GW=Math.round(2*GR/CS),G=new Float32Array(GW*GW),G2=new Float32Array(GW*GW);let tch=[];
+const gi=(x,y)=>{const ix=Math.floor((x+GR)/CS),iy=Math.floor((y+GR)/CS);return(ix<1||iy<1||ix>=GW-1||iy>=GW-1)?-1:iy*GW+ix};
+function under(x,y,own){const c=gi(x,y);if(c<0)return 0;let m=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const k=c+dy*GW+dx;let h=G[k];if(own&&G2[k]>h)h=G2[k];if(h>0){if(dx||dy)h-=(dx&&dy?0.028:0.02);if(h>m)m=h}}return m}
+function splat(A,x,y,z,own){const k=gi(x,y);if(k>=0&&z>A[k]){A[k]=z;if(own)tch.push(k)}}
+function build(){dirty=true}
+function layout(){dirty=true}
+function flush(){if(!dirty)return;dirty=false;G.fill(0);const b={x0:1e9,y0:1e9,x1:-1e9,y1:-1e9};
+  layers.forEach(l=>{if(l.s)buildOne(l.s,b)});
+  if(b.x1>b.x0){LC.set((b.x0+b.x1)/2,(b.y0+b.y1)/2);const r=Math.max(b.x1-b.x0,b.y1-b.y0)*0.72+1;sc.left=sc.bottom=-r;sc.right=sc.top=r;sc.updateProjectionMatrix();placeLight()}}
+function buildOne(s,bb){
+  /* titik bertanda .c = sudut tajam: pita dipecah jadi beberapa kurva halus yang bertemu runcing (lipatan), bukan satu kurva yang dilengkungkan */
+  const P=[s.pts[0]];for(let i=1;i<s.pts.length;i++)if(s.pts[i].distanceTo(P[P.length-1])>1e-3)P.push(s.pts[i]);
+  if(P.length<2)return;
+  const parts=[];let cur=[P[0]];
+  for(let i=1;i<P.length;i++){cur.push(P[i]);if(P[i].c&&i<P.length-1){parts.push(cur);cur=[P[i]]}}
+  parts.push(cur);
+  const curves=parts.map(pp=>new THREE.CatmullRomCurve3(pp.map(p=>new THREE.Vector3(p.x,p.y,0)),false,'centripetal'));
+  const cl=curves.map(c=>c.getLength()),len=cl.reduce((x,y)=>x+y,0),ds=Math.max(0.02,len/1500);
+  const sp=[],sid=[],g0=[],g1=[];
+  curves.forEach((c,k)=>{const q=c.getSpacedPoints(Math.max(2,Math.round(cl[k]/ds)));g0.push(sp.length);q.forEach(p=>{sp.push(p);sid.push(k)});g1.push(sp.length-1)});
+  const N=sp.length-1,M=24,hw=s.width/2,ruf=s.ruffle,lam=0.15,TH=LR;
+  const AL=new Float32Array(N+1);for(let i=1;i<=N;i++)AL[i]=AL[i-1]+sp[i].distanceTo(sp[i-1]);
+  /* puntir = garis lipat lurus melintang pita (p.tw = sudut garis terhadap sumbu pita, 0 = tidak ada). Lebar tetap; sisi kain berbalik di seberang garis */
+  const tws=[];parts.forEach((pp,k)=>{let tot=0;const cum=[0];for(let m=1;m<pp.length;m++){tot+=pp[m].distanceTo(pp[m-1]);cum.push(tot)}const base=AL[g0[k]],L=AL[g1[k]]-base;pp.forEach((p,m)=>{if(p.tw>0&&!(m===pp.length-1&&k<parts.length-1))tws.push({a:base+(tot?cum[m]/tot:0)*L,g:p.tw*Math.PI/180})})});
+  /* tangen & kelengkungan dihitung per segmen, tidak melewati sudut */
+  const T=sp.map((p,i)=>{const k=sid[i],q=sp[Math.min(g1[k],i+1)],r=sp[Math.max(g0[k],i-1)];const x=q.x-r.x,y=q.y-r.y,l=Math.hypot(x,y)||1;return V2(x/l,y/l)});
+  const K=sp.map((p,i)=>{const k=sid[i],i0=Math.max(g0[k],i-8),i1=Math.min(g1[k],i+8);if(i1<=i0)return 0;let d=Math.atan2(T[i1].y,T[i1].x)-Math.atan2(T[i0].y,T[i0].x);while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return d/Math.max(1e-4,AL[i1]-AL[i0])});
+  /* info sudut: jarak ke sudut (cd), sisi dalam (cs), tan setengah sudut (ct2), arah & faktor miter (mx,my,mf) */
+  const cd=new Float32Array(N+1).fill(1e9),cs=new Float32Array(N+1),ct2=new Float32Array(N+1),mx=new Float32Array(N+1),my=new Float32Array(N+1),mf=new Float32Array(N+1);
+  for(let k=0;k+1<curves.length;k++){
+    const a=g1[k],b=g0[k+1],ti=T[a],to=T[b],sgn=(ti.x*to.y-ti.y*to.x)<0?-1:1;
+    const nx=-ti.y-to.y,ny=ti.x+to.x,dm=Math.hypot(nx,ny);
+    let m,f,tn;
+    if(dm<0.05){m=V2(-ti.y,ti.x);f=1;tn=2.5}else{const ch=Math.max(dm/2,0.38);m=V2(nx/dm,ny/dm);f=1/ch;tn=Math.tan(Math.acos(ch))}
+    const Z=hw*tn+0.25;
+    for(let i=a;i>=g0[k]&&AL[a]-AL[i]<Z;i--){const d=AL[a]-AL[i];if(d<cd[i]){cd[i]=d;cs[i]=sgn;ct2[i]=tn}}
+    for(let i=b;i<=g1[k+1]&&AL[i]-AL[b]<Z;i++){const d=AL[i]-AL[b];if(d<cd[i]){cd[i]=d;cs[i]=sgn;ct2[i]=tn}}
+    for(const i of [a,b]){mx[i]=m.x;my[i]=m.y;mf[i]=f}
+  }
+  /* tahap 1: tinggi garis jahitan = tinggi kain di bawahnya + tebal kain */
+  const lag=Math.ceil(1.4*s.width/ds)+4,c=new Float32Array(N+1),ub=new Float32Array(N+1);
+  for(let i=0;i<=N;i++){const r=i-lag;
+    if(r>=0)for(let q=-4;q<=4;q++){const t=q/4,o=t*hw*0.95;splat(G2,sp[r].x-T[r].y*o,sp[r].y+T[r].x*o,c[r]+0.012*t*t,true)}
+    ub[i]=under(sp[i].x,sp[i].y,true);c[i]=ub[i]+TH}
+  for(let pass=0;pass<2;pass++){const d=c.slice();for(let i=0;i<=N;i++){let a=0,n=0;for(let k=Math.max(0,i-10);k<=Math.min(N,i+10);k++){a+=d[k];n++}c[i]=a/n}}
+  for(let i=0;i<=N;i++)c[i]=Math.max(c[i],ub[i]+0.6*TH);
+  for(let k=1;k<curves.length;k++)c[g0[k]]=c[g1[k-1]];
+  tch.forEach(k=>G2[k]=0);tch=[];
+  /* tahap 2: permukaan pita */
+  const pos=[],uv=[],col=[],idx=[],aT=[],aL=[],aR=[],aBk=[],th=s.angle*Math.PI/180,ct=Math.cos(th),st=Math.sin(th),TP=2*Math.PI;
+  for(let i=0;i<=N;i++){
+    const p=sp[i],tx=T[i].x,ty=T[i].y,a=AL[i],k=K[i],ak=Math.abs(k),sg=k<0?-1:1,maxIn=ak>1e-4?0.85/ak:99,zc=cd[i]<1e8,
+      nc=zc?Math.exp(-cd[i]*cd[i]/0.02):0,cr=zc?Math.exp(-cd[i]*cd[i]/0.0016):0,hI=(i>0&&mf[i]>0&&sid[i]!==sid[i-1])?i-1:i,bk=cfg.flip&&(sid[i]&1)?-1:1;
+    if(p.x<bb.x0)bb.x0=p.x;if(p.x>bb.x1)bb.x1=p.x;if(p.y<bb.y0)bb.y0=p.y;if(p.y>bb.y1)bb.y1=p.y;
+    for(let j=0;j<=M;j++){
+      const t=j/M*2-1,at=Math.abs(t),inner=zc?t*cs[i]>0:t*sg>0;
+      let off=t*hw*(1+0.05*hsh(hI,s.id+(t<0?0:5))*Math.pow(at,3));
+      if(inner&&Math.abs(off)>maxIn)off=Math.sign(off)*maxIn;
+      /* sisi dalam sudut tidak boleh melewati garis lipatan (bisektor), jadi tidak menumpuk */
+      if(inner&&zc){const lim=cd[i]/ct2[i];if(Math.abs(off)>lim)off=Math.sign(off)*lim}
+      const Aa=ruf*(inner?0.012+0.055*Math.min(1,ak*hw*1.8):0.009)*Math.pow(at,1.3)*(1+(inner?1.2:0.3)*nc);
+      let w=0.65*Math.sin(a*TP/lam+s.id*1.3+t*0.9+(inner?0:1.7))+0.35*Math.sin(a*TP/(lam*1.73)+s.id*2.1+t);
+      w=Math.sign(w)*Math.pow(Math.abs(w),0.75);
+      off*=1-0.2*Math.min(1,Aa/0.05)*(0.5+0.5*w);let nf=0,tc=0;for(const q of tws){const d=(a-q.a)*Math.sin(q.g)-off*Math.cos(q.g);if(d>0)nf++;tc=Math.max(tc,Math.exp(-d*d/0.0004))}const bkv=nf&1?-bk:bk;
+      let x,y;
+      if(mf[i]>0){const e=off*mf[i];x=p.x+mx[i]*e;y=p.y+my[i]*e}else{x=p.x-ty*off;y=p.y+tx*off}
+      const vr=Math.min(1,Aa/0.045)*(0.5-0.5*w);
+      let z=c[i]+0.012*at*at*(0.4+ruf)+Aa*(0.6+w)+TH*0.7*cr*(1-0.4*at)+TH*0.5*tc;const bv=under(x,y,false)+0.6*TH;if(z<bv)z=bv;
+      pos.push(x,y,z);uv.push((a*ct+bkv*off*st)/(SP*s.msc),(-a*st+bkv*off*ct)/(SP*s.msc));aT.push(t);aL.push(a);aR.push(vr);aBk.push(bkv<0?s.back:0);
+      const hem=at>0.9?0.05*Math.sin((at-0.9)*10*Math.PI):0;
+      const sh=1-(bkv<0?-0.04:0)-0.2*tc-0.2*vr-0.12*Math.pow(at,10)-(at<0.08?0.1:0)+hem-0.16*cr-(inner?0.08*nc:0);col.push(sh,sh,sh);
+    }
+  }
+  for(let i=0;i<pos.length;i+=3)splat(G,pos[i],pos[i+1],pos[i+2],false);
+  for(let i=0;i<N;i++)for(let j=0;j<M;j++){const A=i*(M+1)+j,B=A+1,C=A+M+1,D=C+1;idx.push(A,C,B,B,C,D)}
+  const F=(x,n)=>new THREE.Float32BufferAttribute(x,n),g=new THREE.BufferGeometry();
+  g.setAttribute('position',F(pos,3));g.setAttribute('uv',F(uv,2));g.setAttribute('color',F(col,3));g.setAttribute('aT',F(aT,1));g.setAttribute('aL',F(aL,1));g.setAttribute('aR',F(aR,1));g.setAttribute('aB',F(aBk,1));
+  g.setIndex(idx);g.computeVertexNormals();s.mesh.geometry.dispose();s.mesh.geometry=g;s.len=len;
+  /* jahitan putus-putus di tengah lebar pita */
+  const sp2=[],si=[];let n=0;const sw=Math.max(0.03,s.width*0.17),sl=Math.max(0.1,s.width*0.5),gap=Math.max(0.16,s.width*1.05);
+  for(let i=0,nx=gap*0.5;cfg.dots&&i<=N;i++){if(AL[i]<nx)continue;let j=i;while(j<N&&AL[j]-AL[i]<sl)j++;
+    if(sid[i]===sid[j]&&j-i>=3){const base=n;for(let q=i;q<=j;q++){const u=(AL[q]-AL[i])/(AL[j]-AL[i]),e=sw*0.5*Math.sqrt(Math.max(0,1-(2*u-1)*(2*u-1))),cc=sp[q],x=-T[q].y*e,y=T[q].x*e,z=c[q]+0.004;sp2.push(cc.x-x,cc.y-y,z,cc.x+x,cc.y+y,z);n+=2}
+      for(let q=0;q<j-i;q++){const k=base+q*2;si.push(k,k+2,k+1,k+1,k+2,k+3)}}
+    nx=AL[i]+gap;i=j}
+  const g2=new THREE.BufferGeometry();g2.setAttribute('position',F(sp2,3));g2.setIndex(si);s.stitch.geometry.dispose();s.stitch.geometry=g2;
+  const u=s.cm.uniforms;u.uLen.value=len;u.uHw.value=hw;
+}
+function colors(s){s.rm.color.set(s.tint);s.cm.uniforms.uFront.value.set(s.front);}
+function mk(pts){
+  const s=Object.assign({id:nid++,pts},def);
+  s.rm=new THREE.MeshStandardMaterial({map:def.motifTex||stripTex,vertexColors:true,roughness:.8,side:THREE.DoubleSide});s.cm=cmat();colors(s);
+  /* sisi belakang kain (setelah dilipat): motif tercermin, lebih pudar dan gelap */
+  s.rm.onBeforeCompile=sh=>{sh.vertexShader='attribute float aB;varying float vB;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvB=aB;');
+    sh.fragmentShader='varying float vB;\n'+sh.fragmentShader.replace('#include <map_fragment>','vec4 tx=texture2D(map,vUv);tx=mapTexelToLinear(tx);float lu=dot(tx.rgb,vec3(.3,.59,.11));tx.rgb=mix(tx.rgb,mix(tx.rgb,vec3(lu),.5)*.6+.4,vB);diffuseColor*=tx;')};
+  s.mesh=new THREE.Mesh(new THREE.BufferGeometry(),comic?s.cm:s.rm);s.mesh.castShadow=s.mesh.receiveShadow=true;
+  s.stitch=new THREE.Mesh(new THREE.BufferGeometry(),new THREE.MeshBasicMaterial({color:0x15171d,side:THREE.DoubleSide}));s.stitch.visible=!comic;s.mesh.add(s.stitch);
+  scene.add(s.mesh);layers[ai].s=S=s;build(s);layout();return s}
+function upd(){if(S){build(S);handles()}}
+function kill(l){const s=l.s;if(!s)return;dirty=true;scene.remove(s.mesh);s.mesh.geometry.dispose();s.stitch.geometry.dispose();s.rm.dispose();s.cm.dispose();l.s=null}
+
+/* handles & ujung kain */
+const hg=new THREE.CircleGeometry(0.1,20),M0=c=>new THREE.MeshBasicMaterial({color:c,depthTest:false}),hm=M0(0xff6a3d),hC=M0(0xffc233),hS=M0(0x18c8e8),hT=M0(0x2fb36b),hB=M0(0x3d7bff),hr=M0(0xffffff);
+function scaleHandles(){H.forEach(h=>h.scale.setScalar(1/cam.zoom))}
+function mkH(p,i,m){const g=new THREE.Group(),o=new THREE.Mesh(hg,hr),c=new THREE.Mesh(hg,m);o.scale.setScalar(1.4);o.renderOrder=998;c.renderOrder=999;g.add(o,c);g.position.set(p.x,p.y,50);o.userData.i=c.userData.i=i;scene.add(g);H.push(g)}
+function handles(){H.forEach(h=>scene.remove(h));H=[];selUI();if(mode==='ref'){if(ref)mkH(refCorner(),-3,hS);scaleHandles();return}if(!S||(drag&&drag.t==='draw'))return;
+  if(mode==='select'||mode==='fold')S.pts.forEach((p,i)=>mkH(p,i,i===selI?hS:(p.c?hC:hm)));
+  else if(mode==='draw'){mkH(S.pts[0],-1,hB);mkH(S.pts[S.pts.length-1],-2,hT)}
+  scaleHandles()}
+
+/* layer */
+function renderLayers(){const b=$('layers');b.innerHTML='';layers.forEach((l,i)=>{const x=document.createElement('button');x.textContent='Layer '+(i+1)+(l.s?'':' (kosong)');x.className=i===ai?'on':'';x.setAttribute('aria-pressed',i===ai);x.onclick=()=>setActive(i);b.appendChild(x)})}
+function setActive(i){ai=i;selI=-1;S=layers[i].s;if(S){$('sw').value=S.width;$('sr').value=S.ruffle;$('sa').value=S.angle;$('sc').value=S.tint;$('cf').value=S.front;$('ms').value=S.msc;$('bkf').value=S.back}handles();renderLayers()}
+$('la').onclick=()=>{if(layers.length>=12){msg('Maksimal 12 layer.');return}layers.push({s:null});setActive(layers.length-1)};
+$('lx').onclick=()=>{kill(layers[ai]);if(layers.length>1)layers.splice(ai,1);layout();setActive(Math.min(ai,layers.length-1))};
+const lmv=d=>()=>{const j=ai+d;if(j<0||j>=layers.length)return;[layers[ai],layers[j]]=[layers[j],layers[ai]];ai=j;layout();renderLayers()};
+$('lu').onclick=lmv(1);$('ld').onclick=lmv(-1);
+$('clr').onclick=()=>{layers.forEach(kill);layers=[{s:null}];setActive(0)};
+
+/* ui */
+const HINT={draw:'Seret dari ujung pita (hijau = akhir, biru = awal) untuk memperpanjang. Belokan tajam dipertahankan sebagai lipatan. Di layer kosong, goresan pertama membuat pita.',select:'Seret pita untuk memindah, seret titik untuk merangkai ulang. Ketuk titik untuk memilihnya (cyan), lalu atur lipatan tajam dan puntirnya. Klik dua kali untuk menghapus titik.',fold:'Klik pada pita untuk menambah lipatan, lalu seret keluar untuk menariknya. Tiap lipatan membalik sisi kain. Atur puntirnya di bagian Titik terpilih.',ref:'Seret foto untuk memindah. Seret titik cyan di sudut kanan atas untuk mengubah ukuran sekaligus memutar. Foto hanya patokan dan tidak ikut diekspor.',pan:'Seret untuk menggeser kanvas. Zoom dengan roda mouse atau cubit dua jari.'};
+function setMode(m){mode=m;$('hint').textContent=HINT[m];['draw','select','fold','ref','pan'].forEach(k=>{const b=$('m-'+k);b.classList.toggle('on',k===m);b.setAttribute('aria-pressed',k===m)});cv.style.cursor=m==='draw'?'crosshair':m==='pan'?'grab':'default';handles()}
+['draw','select','fold','ref','pan'].forEach(k=>$('m-'+k).onclick=()=>setMode(k));
+function setStyle(c){comic=c;$('st-real').classList.toggle('on',!c);$('st-comic').classList.toggle('on',c);$('st-real').setAttribute('aria-pressed',!c);$('st-comic').setAttribute('aria-pressed',c);$('compal').style.display=c?'':'none';
+  base.visible=!c;scene.background=c?BGC:BG;layers.forEach(l=>{if(l.s){l.s.mesh.material=c?l.s.cm:l.s.rm;l.s.stitch.visible=!c}})}
+$('st-real').onclick=()=>setStyle(false);$('st-comic').onclick=()=>setStyle(true);
+function prop(id,key,fn){$(id).oninput=e=>{const v=fn?fn(e.target.value):+e.target.value;def[key]=v;if(S){S[key]=v;if(fn)colors(S);else build(S)}}}
+prop('sw','width');prop('sr','ruffle');prop('sa','angle');prop('sc','tint',v=>v);prop('cf','front',v=>v);prop('ms','msc');prop('bkf','back');
+$('lift').oninput=e=>{LR=+e.target.value;layers.forEach(l=>l.s&&build(l.s));layout()};$('lt').oninput=e=>setLight(+e.target.value);
+const cen=()=>{const c=V2(0,0);S.pts.forEach(p=>c.add(p));return c.divideScalar(S.pts.length)};
+const need=f=>()=>{if(S){f();upd();layout()}};
+$('rl').onclick=need(()=>{const c=cen();S.pts.forEach(p=>p.rotateAround(c,Math.PI/12))});
+$('rr').onclick=need(()=>{const c=cen();S.pts.forEach(p=>p.rotateAround(c,-Math.PI/12))});
+const scl=k=>need(()=>{const c=cen();S.pts.forEach(p=>p.sub(c).multiplyScalar(k).add(c))});
+$('bg').onclick=scl(1.12);$('sm').onclick=scl(1/1.12);
+$('fl').onclick=need(()=>{const c=cen();S.pts.forEach(p=>p.x=2*c.x-p.x)});
+$('sm0').onclick=need(()=>{S.pts.forEach(p=>p.c=false)});
+$('sh0').onclick=need(()=>{const P=S.pts;for(let i=1;i<P.length-1;i++){const u=P[i].clone().sub(P[i-1]),v=P[i+1].clone().sub(P[i]),d=u.length()*v.length();P[i].c=d>0&&Math.acos(Math.max(-1,Math.min(1,u.dot(v)/d)))>=cfg.th*Math.PI/180}});
+$('cut').onclick=need(()=>{if(S.pts.length>4)S.pts.splice(-3);else msg('Pita sudah cukup pendek.')});
+function demo(){if(S){kill(layers[ai]);S=null}const p=[];for(let i=0;i<=80;i++){const t=i/80*Math.PI*2;p.push(V2(0.7*Math.cos(t)+1.1*Math.cos(6*t),0.7*Math.sin(t)+1.1*Math.sin(6*t)))}
+  mk(p);S.width=0.3;$('sw').value=0.3;build(S);layout();handles();renderLayers()}
+/* motif sendiri: dipotong persegi, diskalakan 512px, lalu dibuat seamless (diblend dengan salinan yang digeser setengah ubin, horizontal lalu vertikal) */
+function seamless(img){const S=512,c=document.createElement('canvas');c.width=c.height=S;const g=c.getContext('2d'),m=Math.min(img.width,img.height);g.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S,S);
+  const d=g.getImageData(0,0,S,S),a=d.data,o=new Uint8ClampedArray(a);
+  const pass=(src,dst,v)=>{for(let y=0;y<S;y++)for(let x=0;x<S;x++){const u=1-Math.abs(2*(v?y:x)/S-1),w=u*u*(3-2*u),p=(y*S+x)*4,q=v?(((y+S/2)%S)*S+x)*4:(y*S+(x+S/2)%S)*4;for(let k=0;k<3;k++)dst[p+k]=src[p+k]*w+src[q+k]*(1-w);dst[p+3]=255}};
+  pass(a,o,false);pass(o,a,true);g.putImageData(d,0,0);return c}
+function setMotif(t){def.motifTex=t;if(S){S.rm.map=t||stripTex;S.rm.needsUpdate=true}}
+$('mu').onclick=()=>$('mf').click();$('mx').onclick=()=>{setMotif(null);msg('Motif dihapus, pita polos.')};
+$('mf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();
+  fr.onload=()=>{const im=new Image();im.onload=()=>{const t=new THREE.CanvasTexture(seamless(im));t.wrapS=t.wrapT=THREE.RepeatWrapping;t.encoding=THREE.sRGBEncoding;t.anisotropy=8;setMotif(t);msg('Motif dipasang dan dibuat seamless.')};im.onerror=()=>msg('File gambar tidak bisa dibaca.');im.src=fr.result};
+  fr.onerror=()=>msg('File gambar tidak bisa dibaca.');fr.readAsDataURL(f)};
+/* foto referensi: bidang di bawah semua pita, bisa dipindah, diskalakan, diputar, dan ditransparankan */
+let ref=null;
+function refCorner(){const c=Math.cos(ref.rot),n=Math.sin(ref.rot),dx=.5*ref.s*ref.asp,dy=.5*ref.s;return V2(ref.x+dx*c-dy*n,ref.y+dx*n+dy*c)}
+function refApply(){if(!ref)return;const m=ref.mesh;m.position.set(ref.x,ref.y,0.004);m.rotation.z=ref.rot;m.scale.set(ref.s*ref.asp,ref.s,1);m.material.opacity=ref.op;
+  $('rsz').value=ref.s;$('rrt').value=((Math.round(ref.rot*180/Math.PI)+540)%360)-180;$('rop').value=ref.op;handles()}
+function refDown(e,w){if(!ref){msg('Unggah foto referensi dulu.');return}
+  if(pickHandle(e)===-3){const c=V2(ref.x,ref.y),v=w.clone().sub(c);drag={t:'rs',c,d0:v.length()||1,a0:Math.atan2(v.y,v.x),s0:ref.s,r0:ref.rot}}
+  else drag={t:'rm',p0:w,x0:ref.x,y0:ref.y}}
+function refMove(w){ref.x=drag.x0+w.x-drag.p0.x;ref.y=drag.y0+w.y-drag.p0.y;refApply()}
+function refScale(w){const v=w.clone().sub(drag.c);ref.s=Math.min(12,Math.max(0.5,drag.s0*v.length()/drag.d0));ref.rot=drag.r0+Math.atan2(v.y,v.x)-drag.a0;refApply()}
+$('rsz').oninput=e=>{if(ref){ref.s=+e.target.value;refApply()}};
+$('rrt').oninput=e=>{if(ref){ref.rot=+e.target.value*Math.PI/180;refApply()}};
+$('rop').oninput=e=>{if(ref){ref.op=+e.target.value;refApply()}};
+$('rvis').onchange=e=>{if(ref)ref.mesh.visible=e.target.checked};
+$('ru').onclick=()=>$('rf').click();
+$('rx').onclick=()=>{if(!ref)return;scene.remove(ref.mesh);ref.mesh.material.map.dispose();ref.mesh.material.dispose();ref.mesh.geometry.dispose();ref=null;handles();msg('Foto referensi dihapus.')};
+$('rf').onchange=e=>{const f=e.target.files[0];e.target.value='';if(!f)return;const fr=new FileReader();
+  fr.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,2048/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+    const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.minFilter=THREE.LinearFilter;t.anisotropy=4;
+    if(ref){ref.mesh.material.map.dispose();ref.mesh.material.map=t;ref.mesh.material.needsUpdate=true;ref.asp=c.width/c.height}
+    else{const mesh=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({map:t,transparent:true,opacity:.55,depthWrite:false}));scene.add(mesh);ref={mesh,asp:c.width/c.height,x:cam.position.x,y:cam.position.y,s:5,rot:0,op:.55}}
+    ref.mesh.visible=true;$('rvis').checked=true;setMode('ref');refApply();msg('Foto referensi dipasang.')};
+    im.onerror=()=>msg('File gambar tidak bisa dibaca.');im.src=fr.result};
+  fr.onerror=()=>msg('File gambar tidak bisa dibaca.');fr.readAsDataURL(f)};
+$('demo').onclick=demo;
+$('demoz').onclick=()=>{if(S){kill(layers[ai]);S=null}const p=[[-2.2,-1],[-1.3,1],[-0.4,-1],[0.5,1],[1.4,-1],[2.2,0.6]].map(a=>V2(a[0],a[1]));p.slice(1,-1).forEach(v=>v.c=true);mk(p);S.width=0.3;$('sw').value=0.3;build(S);layout();handles();renderLayers()};
+$('zi').onclick=()=>zoom(1.25);$('zo').onclick=()=>zoom(.8);
+function zoom(k){cam.zoom=Math.min(6,Math.max(.3,cam.zoom*k));cam.updateProjectionMatrix();scaleHandles()}
+cv.addEventListener('wheel',e=>{e.preventDefault();zoom(e.deltaY<0?1.1:.91)},{passive:false});
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+function msg(t){$('msg').textContent=t;setTimeout(()=>{if($('msg').textContent===t)$('msg').textContent=''},5000)}
+
+/* pointer (mouse, sentuh, cubit 2 jari) */
+const ray=new THREE.Raycaster(),ndc=new THREE.Vector2(),ptrs=new Map();let pinch=null;
+function toN(e){const r=cv.getBoundingClientRect();ndc.set((e.clientX-r.left)/r.width*2-1,-((e.clientY-r.top)/r.height)*2+1)}
+function world(e){toN(e);const v=new THREE.Vector3(ndc.x,ndc.y,0).unproject(cam);return V2(v.x,v.y)}
+function pickHandle(e){toN(e);ray.setFromCamera(ndc,cam);const h=ray.intersectObjects(H,true)[0];return h?h.object.userData.i:-1}
+function pickLayer(e){toN(e);ray.setFromCamera(ndc,cam);const h=ray.intersectObjects(layers.filter(l=>l.s).map(l=>l.s.mesh))[0];return h?layers.findIndex(l=>l.s&&l.s.mesh===h.object):-1}
+let selI=-1;
+function selUI(){const P=S&&S.pts[selI];if(!P)selI=-1;$('pc').disabled=!P||selI===0||selI===S.pts.length-1;$('pt').disabled=!P;$('pc').checked=!!(P&&P.c);$('pt').value=P?(P.tw||0):0}
+$('pc').onchange=e=>{if(selI>=0){S.pts[selI].c=e.target.checked;upd()}};
+$('pt').oninput=e=>{if(selI>=0){let v=+e.target.value;if(v>0&&v<20){v=20;e.target.value=20}S.pts[selI].tw=v;build(S)}};
+const cfg={sharp:true,th:50,flip:true,dots:false};$('flip').onchange=e=>{cfg.flip=e.target.checked;layers.forEach(l=>l.s&&build(l.s))};$('sharp').onchange=e=>cfg.sharp=e.target.checked;$('sth').oninput=e=>cfg.th=+e.target.value;
+/* goresan mentah -> titik pita: tikungan tajam ditandai .c dan selalu dipertahankan; bagian lain disederhanakan tiap 0,4 */
+function prep(raw){
+  raw.forEach(p=>p.c=false);const n=raw.length,L=0.16,th=cfg.th*Math.PI/180,ang=new Float32Array(n);
+  if(cfg.sharp)for(let i=1;i<n-1;i++){let j=i-1,k=i+1;while(j>0&&raw[i].distanceTo(raw[j])<L)j--;while(k<n-1&&raw[i].distanceTo(raw[k])<L)k++;
+    const u=raw[i].clone().sub(raw[j]),v=raw[k].clone().sub(raw[i]),lu=u.length(),lv=v.length();
+    if(lu>=L*.6&&lv>=L*.6)ang[i]=Math.acos(Math.max(-1,Math.min(1,u.dot(v)/(lu*lv))))}
+  const out=[raw[0]];
+  for(let i=1;i<n;i++){const p=raw[i],last=out[out.length-1];
+    if(i<n-1&&ang[i]>=th&&ang[i]>ang[i-1]&&ang[i]>=ang[i+1]&&p.distanceTo(last)>0.05){if(out.length>1&&!last.c&&p.distanceTo(last)<0.2)out.pop();p.c=true;out.push(p)}
+    else if(i===n-1||p.distanceTo(last)>=0.4)out.push(p)}
+  return out}
+function joinCorner(b,rest){const l=b[b.length-1];let c=false;if(cfg.sharp&&b.length>1){const q=b[b.length-2],r=rest.find(p=>p.distanceTo(l)>=0.16);if(r){const u=l.clone().sub(q),v=r.clone().sub(l),d=u.length()*v.length();c=d>0&&Math.acos(Math.max(-1,Math.min(1,u.dot(v)/d)))>=cfg.th*Math.PI/180}}l.c=c}
+function abort(){if(!drag)return;if(drag.t==='draw'){if(drag.base&&S){drag.base[drag.base.length-1].c=false;S.pts=drag.base;build(S)}else if(S){kill(layers[ai]);S=null}}
+  if(drag.t==='move'&&S){S.mesh.position.x=S.mesh.position.y=0}drag=null;handles()}
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(ptrs.size===2){abort();const[p,q]=[...ptrs.values()];pinch={d:Math.hypot(p.x-q.x,p.y-q.y)||1,z:cam.zoom,mx:(p.x+q.x)/2,my:(p.y+q.y)/2,cx:cam.position.x,cy:cam.position.y};return}
+  if(ptrs.size>2)return;const w=world(e);
+  if(e.button===1||e.button===2||mode==='pan'){drag={t:'pan',x:e.clientX,y:e.clientY,cx:cam.position.x,cy:cam.position.y};cv.style.cursor='grabbing';return}
+  if(mode==='draw'){
+    if(!S){drag={t:'draw',raw:[w],base:null};handles();return}
+    const P=S.pts,dt=w.distanceTo(P[P.length-1]),dh=w.distanceTo(P[0]);
+    if(Math.min(dt,dh)>0.6/cam.zoom+0.15){msg('Layer ini sudah punya pita. Seret dari ujungnya (titik hijau/biru) untuk memperpanjang, atau tambah layer baru.');return}
+    if(dh<dt)P.reverse();
+    drag={t:'draw',raw:[P[P.length-1].clone()],base:P.slice()};handles();return}
+  if(mode==='ref'){refDown(e,w);return}
+  const hi=pickHandle(e);if(hi>=0){drag={t:'pt',i:hi,x:e.clientX,y:e.clientY,moved:false};return}
+  if(mode==='fold'){const l2=pickLayer(e);if(l2>=0&&l2!==ai)setActive(l2);const r=S&&nearSeg(w);
+    if(r&&r.d<S.width*0.7+0.12){const q=V2(r.x,r.y);q.c=true;S.pts.splice(r.i+1,0,q);selI=r.i+1;build(S);handles();drag={t:'pt',i:r.i+1,x:e.clientX,y:e.clientY,moved:false,ins:true}}return}
+  const li=pickLayer(e);if(li>=0){if(li!==ai)setActive(li);drag={t:'move',p0:w}}});
+function nearSeg(w){let b=null;for(let i=0;i<S.pts.length-1;i++){const a=S.pts[i],c=S.pts[i+1],dx=c.x-a.x,dy=c.y-a.y,t=Math.max(0,Math.min(1,((w.x-a.x)*dx+(w.y-a.y)*dy)/(dx*dx+dy*dy||1e-9))),x=a.x+dx*t,y=a.y+dy*t,d=Math.hypot(w.x-x,w.y-y);if(!b||d<b.d)b={i,x,y,d}}return b}
+cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pinch&&ptrs.size===2){const[p,q]=[...ptrs.values()];cam.zoom=Math.min(6,Math.max(.3,pinch.z*Math.hypot(p.x-q.x,p.y-q.y)/pinch.d));
+    const k=VH/cv.clientHeight/cam.zoom;cam.position.set(pinch.cx-((p.x+q.x)/2-pinch.mx)*k,pinch.cy+((p.y+q.y)/2-pinch.my)*k,60);cam.updateProjectionMatrix();scaleHandles();return}
+  if(!drag)return;const w=world(e);
+  if(drag.t==='pan'){const k=VH/cv.clientHeight/cam.zoom;cam.position.set(drag.cx-(e.clientX-drag.x)*k,drag.cy+(e.clientY-drag.y)*k,60)}
+  else if(drag.t==='draw'){if(w.distanceTo(drag.raw[drag.raw.length-1])<0.1)return;drag.raw.push(w);
+    const kp=prep(drag.raw).slice(1),pts=drag.base?(joinCorner(drag.base,kp),drag.base.concat(kp)):[drag.raw[0]].concat(kp);
+    if(pts.length>=2){if(!S)mk(pts);else{S.pts=pts;build(S);layout()}}}
+  else if(drag.t==='move'){const dx=w.x-drag.p0.x,dy=w.y-drag.p0.y;S.mesh.position.x=dx;S.mesh.position.y=dy;H.forEach((h,i)=>h.position.set(S.pts[i].x+dx,S.pts[i].y+dy,50))}
+  else if(drag.t==='rm'){refMove(w)}else if(drag.t==='rs'){refScale(w)}else if(drag.t==='pt'){if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;drag.moved=true;S.pts[drag.i].copy(w);build(S);H[drag.i].position.set(w.x,w.y,50)}});
+function end(){
+  if(!drag)return;const d=drag;drag=null;cv.style.cursor=mode==='draw'?'crosshair':mode==='pan'?'grab':'default';
+  if(d.t==='draw'&&S&&d.raw.length>1){const n=prep(d.raw);if(d.base)joinCorner(d.base,n.slice(1));S.pts=d.base?d.base.concat(n.slice(1)):n;build(S);layout();renderLayers()}
+  if(d.t==='move'){const dx=S.mesh.position.x,dy=S.mesh.position.y;S.pts.forEach(p=>p.add(V2(dx,dy)));S.mesh.position.x=S.mesh.position.y=0;build(S)}
+  if(d.t==='pt'){selI=d.i;layout()}
+  handles()}
+const up=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=null;end()};
+cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
+cv.addEventListener('dblclick',e=>{if(mode==='draw'||mode==='pan'||!S)return;const i=pickHandle(e);if(i>=0&&S.pts.length>2){selI=-1;S.pts.splice(i,1);upd();layout()}});
+
+/* export: latar transparan, hanya motif kain */
+let dl=null;try{window.claude&&claude.use('downloads').then(d=>dl=d).catch(()=>{})}catch(_){}
+$('exp').onclick=async()=>{
+  if(!layers.some(l=>l.s)){msg('Belum ada motif untuk diexport.');return}
+  if(!dl){msg('Export tidak tersedia di tampilan ini. Buka artifact di claude.ai.');return}
+  const hh=H.slice(),pr=R.getPixelRatio(),bv=base.visible,bg=scene.background;let blob=null;
+  hh.forEach(h=>scene.remove(h));base.visible=false;const rv=ref?ref.mesh.visible:false;if(ref)ref.mesh.visible=false;scene.background=null;R.setClearColor(0x000000,0);
+  try{R.setPixelRatio(Math.min(3,Math.max(2,devicePixelRatio||1)));R.setSize(stage.clientWidth,stage.clientHeight);flush();R.render(scene,cam);
+    const w=cv.width,h=cv.height,c2=document.createElement('canvas');c2.width=w;c2.height=h;const g=c2.getContext('2d');g.drawImage(cv,0,0);
+    const d=g.getImageData(0,0,w,h).data;let x0=w,y0=h,x1=-1,y1=-1;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++)if(d[(y*w+x)*4+3]>8){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}
+    if(x1>=0){const p=16;x0=Math.max(0,x0-p);y0=Math.max(0,y0-p);x1=Math.min(w-1,x1+p);y1=Math.min(h-1,y1+p);
+      const c3=document.createElement('canvas');c3.width=x1-x0+1;c3.height=y1-y0+1;c3.getContext('2d').drawImage(c2,x0,y0,c3.width,c3.height,0,0,c3.width,c3.height);
+      blob=await new Promise(r=>c3.toBlob(r,'image/png'))}
+  }finally{R.setPixelRatio(pr);R.setSize(stage.clientWidth,stage.clientHeight);base.visible=bv;if(ref)ref.mesh.visible=rv;scene.background=bg;hh.forEach(h=>scene.add(h))}
+  if(!blob){msg('Motif tidak terlihat di layar. Geser/zoom lalu coba lagi.');return}
+  try{await dl.save({filename:'motif-kain.png',data:blob});msg('PNG transparan siap disimpan.')}catch(err){msg(err&&err.code==='declined'?'Penyimpanan dibatalkan.':'Gagal menyimpan PNG.')}};
+
+(function loop(){requestAnimationFrame(loop);flush();R.render(scene,cam)})();
+resize();new ResizeObserver(resize).observe(stage);renderLayers();demo();setMode('draw');
+</script></body></html>
